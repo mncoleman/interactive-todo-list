@@ -8,19 +8,8 @@
 </head>
 <body>
 
-<!-- Camera permission overlay -->
-<div id="camera-overlay">
-  <div class="overlay-box">
-    <div class="overlay-icon">✋</div>
-    <h1>Gesture Todo</h1>
-    <p>Control your tasks with your hands.</p>
-    <button id="enable-camera">Enable Camera</button>
-    <p class="overlay-hint">No video feed is shown — just hand dots on screen.</p>
-  </div>
-</div>
-
 <!-- Main app -->
-<div id="app" class="hidden">
+<div id="app">
   <!-- Zone labels -->
   <div class="zone-label zone-label-supply">NEW</div>
   <div class="zone-label zone-label-edit">EDIT</div>
@@ -57,6 +46,8 @@
   </div>
 </div>
 
-<script src="app.js" type="module"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.min.js" crossorigin="anonymous"></script>
+<script src="app.js"></script>
 </body>
 </html>
