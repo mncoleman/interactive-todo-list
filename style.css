@@ -19,7 +19,7 @@ body {
   overflow: hidden;
   width: 100vw;
   height: 100vh;
-  cursor: none;
+  cursor: default;
 }
 
 /* ---- Camera overlay ---- */
@@ -72,7 +72,7 @@ body {
 }
 
 /* ---- App ---- */
-#app { position: relative; width: 100vw; height: 100vh; }
+#app { position: relative; width: 100vw; height: 100vh; cursor: none; }
 #app.hidden { display: none; }
 
 /* ---- Zones ---- */
