@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gesture Todo</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Camera permission overlay -->
+<div id="camera-overlay">
+  <div class="overlay-box">
+    <div class="overlay-icon">✋</div>
+    <h1>Gesture Todo</h1>
+    <p>Control your tasks with your hands.</p>
+    <button id="enable-camera">Enable Camera</button>
+    <p class="overlay-hint">No video feed is shown — just hand dots on screen.</p>
+  </div>
+</div>
+
+<!-- Main app -->
+<div id="app" class="hidden">
+  <!-- Zone labels -->
+  <div class="zone-label zone-label-supply">NEW</div>
+  <div class="zone-label zone-label-edit">EDIT</div>
+  <div class="zone-label zone-label-saved">SAVED</div>
+  <div class="zone-label zone-label-complete">COMPLETE</div>
+
+  <!-- Zone outlines -->
+  <div class="zone zone-supply" id="zone-supply"></div>
+  <div class="zone zone-edit" id="zone-edit"></div>
+  <div class="zone zone-saved" id="zone-saved"></div>
+  <div class="zone zone-complete" id="zone-complete"></div>
+
+  <!-- Black hole center -->
+  <div id="black-hole">
+    <div class="bh-ring bh-ring-1"></div>
+    <div class="bh-ring bh-ring-2"></div>
+    <div class="bh-ring bh-ring-3"></div>
+    <div class="bh-core"></div>
+  </div>
+
+  <!-- Card container -->
+  <div id="card-container"></div>
+
+  <!-- Hand dots layer -->
+  <canvas id="hand-canvas"></canvas>
+
+  <!-- Edit input (appears when card is in edit zone) -->
+  <input type="text" id="edit-input" class="hidden" placeholder="Type your task..." maxlength="80" autocomplete="off">
+
+  <!-- HUD -->
+  <div id="hud">
+    <span id="hud-hands">HANDS: 0</span>
+    <span id="hud-status"></span>
+  </div>
+</div>
+
+<script src="app.js" type="module"></script>
+</body>
+</html>
