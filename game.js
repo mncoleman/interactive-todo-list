@@ -91,11 +91,15 @@ function gameLoop(timestamp) {
   // `hands` is the global array from app.js
   const detectedHands = (typeof hands !== "undefined") ? hands : [];
 
-  // Match birds to hands
+  // Match birds to hands — spawn at hand position
   while (birds.length < detectedHands.length) {
+    const hand = detectedHands[birds.length];
+    const indices = [0, 5, 9, 13, 17];
+    let sx = 0, sy = 0;
+    for (const idx of indices) { sx += hand.landmarks[idx].x; sy += hand.landmarks[idx].y; }
     birds.push({
-      x: BIRD_X,
-      y: H / 2,
+      x: (1 - sx / indices.length) * W,
+      y: (sy / indices.length) * H,
       vy: 0,
       alive: true,
       colorIdx: birds.length % BIRD_COLORS.length,
