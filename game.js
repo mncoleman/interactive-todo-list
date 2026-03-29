@@ -94,6 +94,7 @@ function gameLoop(timestamp) {
   // Match birds to hands
   while (birds.length < detectedHands.length) {
     birds.push({
+      x: BIRD_X,
       y: H / 2,
       vy: 0,
       alive: true,
@@ -107,18 +108,21 @@ function gameLoop(timestamp) {
     const bird = birds[i];
 
     if (i < detectedHands.length && bird.alive) {
-      // Hand controls bird — map hand Y to screen Y
       const hand = detectedHands[i];
       const indices = [0, 5, 9, 13, 17];
-      let sy = 0;
-      for (const idx of indices) sy += hand.landmarks[idx].y;
+      let sx = 0, sy = 0;
+      for (const idx of indices) {
+        sx += hand.landmarks[idx].x;
+        sy += hand.landmarks[idx].y;
+      }
+      // Mirror X, map both axes to screen
+      const targetX = (1 - sx / indices.length) * W;
       const targetY = (sy / indices.length) * H;
 
-      // Smooth toward hand position
+      bird.x += (targetX - bird.x) * 0.25;
       bird.y += (targetY - bird.y) * 0.25;
       bird.vy = 0;
     } else if (bird.alive) {
-      // Hand disappeared — bird starts falling
       bird.alive = false;
       bird.vy = -2;
     }
@@ -149,10 +153,10 @@ function gameLoop(timestamp) {
   for (const pipe of pipes) {
     pipe.x -= PIPE_SPEED;
 
-    // Score when bird passes pipe
-    if (!pipe.scored && pipe.x + PIPE_WIDTH < BIRD_X) {
-      const aliveBirds = birds.filter(b => b.alive);
-      if (aliveBirds.length > 0) {
+    // Score when any alive bird passes pipe
+    if (!pipe.scored) {
+      const passed = birds.some(b => b.alive && b.x - BIRD_RADIUS > pipe.x + PIPE_WIDTH);
+      if (passed) {
         score++;
         gameScoreEl.textContent = `SCORE: ${score}`;
         pipe.scored = true;
@@ -163,23 +167,45 @@ function gameLoop(timestamp) {
   // Remove off-screen pipes
   pipes = pipes.filter(p => p.x + PIPE_WIDTH > -10);
 
-  // --- Collision detection ---
+  // --- Collision detection (check BEFORE moving into walls) ---
   for (const bird of birds) {
     if (!bird.alive) continue;
-    for (const pipe of pipes) {
-      const inPipeX = BIRD_X + BIRD_RADIUS > pipe.x && BIRD_X - BIRD_RADIUS < pipe.x + PIPE_WIDTH;
-      if (inPipeX) {
-        const inGap = bird.y - BIRD_RADIUS > pipe.gapY && bird.y + BIRD_RADIUS < pipe.gapY + PIPE_GAP;
-        if (!inGap) {
-          bird.alive = false;
-          bird.vy = -4; // bounce up slightly on crash
-        }
-      }
-    }
+
     // Floor / ceiling
     if (bird.y - BIRD_RADIUS < 0 || bird.y + BIRD_RADIUS > H) {
       bird.alive = false;
       bird.vy = -2;
+      continue;
+    }
+
+    for (const pipe of pipes) {
+      const inPipeX = bird.x + BIRD_RADIUS > pipe.x && bird.x - BIRD_RADIUS < pipe.x + PIPE_WIDTH;
+      if (inPipeX) {
+        const inGap = bird.y - BIRD_RADIUS > pipe.gapY && bird.y + BIRD_RADIUS < pipe.gapY + PIPE_GAP;
+        if (!inGap) {
+          bird.alive = false;
+          bird.vy = -3;
+          break;
+        }
+      }
+    }
+
+    // Prevent alive birds from moving into pipe walls
+    if (bird.alive) {
+      for (const pipe of pipes) {
+        const wouldOverlapX = bird.x + BIRD_RADIUS > pipe.x && bird.x - BIRD_RADIUS < pipe.x + PIPE_WIDTH;
+        if (wouldOverlapX) {
+          const inGap = bird.y - BIRD_RADIUS > pipe.gapY && bird.y + BIRD_RADIUS < pipe.gapY + PIPE_GAP;
+          if (!inGap) {
+            // Push bird out — don't let it phase through
+            if (bird.x < pipe.x + PIPE_WIDTH / 2) {
+              bird.x = pipe.x - BIRD_RADIUS;
+            } else {
+              bird.x = pipe.x + PIPE_WIDTH + BIRD_RADIUS;
+            }
+          }
+        }
+      }
     }
   }
 
@@ -243,7 +269,7 @@ function gameLoop(timestamp) {
 
     gameCtx.save();
     gameCtx.globalAlpha = alpha;
-    gameCtx.translate(BIRD_X, bird.y);
+    gameCtx.translate(bird.x, bird.y);
 
     // Rotation based on velocity
     const angle = bird.alive ? 0 : Math.min(bird.vy * 3, 90) * Math.PI / 180;
