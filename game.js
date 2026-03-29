@@ -26,7 +26,7 @@ let lastGameTime = 0;
 
 // Settings
 const PIPE_WIDTH   = 60;
-const PIPE_GAP     = 160;
+const PIPE_GAP     = 220;
 const PIPE_SPEED   = 3;
 const PIPE_INTERVAL = 90; // frames between pipes
 const BIRD_X       = 120;
@@ -167,44 +167,56 @@ function gameLoop(timestamp) {
   // Remove off-screen pipes
   pipes = pipes.filter(p => p.x + PIPE_WIDTH > -10);
 
-  // --- Collision detection (check BEFORE moving into walls) ---
+  // --- Collision: birds are solid, walls are solid ---
   for (const bird of birds) {
     if (!bird.alive) continue;
 
-    // Floor / ceiling
+    // Floor / ceiling kill
     if (bird.y - BIRD_RADIUS < 0 || bird.y + BIRD_RADIUS > H) {
       bird.alive = false;
-      bird.vy = -2;
+      bird.vy = 0;
       continue;
     }
 
     for (const pipe of pipes) {
-      const inPipeX = bird.x + BIRD_RADIUS > pipe.x && bird.x - BIRD_RADIUS < pipe.x + PIPE_WIDTH;
-      if (inPipeX) {
-        const inGap = bird.y - BIRD_RADIUS > pipe.gapY && bird.y + BIRD_RADIUS < pipe.gapY + PIPE_GAP;
-        if (!inGap) {
-          bird.alive = false;
-          bird.vy = -3;
-          break;
-        }
-      }
-    }
+      const overlapX = bird.x + BIRD_RADIUS > pipe.x && bird.x - BIRD_RADIUS < pipe.x + PIPE_WIDTH;
+      if (!overlapX) continue;
 
-    // Prevent alive birds from moving into pipe walls
-    if (bird.alive) {
-      for (const pipe of pipes) {
-        const wouldOverlapX = bird.x + BIRD_RADIUS > pipe.x && bird.x - BIRD_RADIUS < pipe.x + PIPE_WIDTH;
-        if (wouldOverlapX) {
-          const inGap = bird.y - BIRD_RADIUS > pipe.gapY && bird.y + BIRD_RADIUS < pipe.gapY + PIPE_GAP;
-          if (!inGap) {
-            // Push bird out — don't let it phase through
-            if (bird.x < pipe.x + PIPE_WIDTH / 2) {
-              bird.x = pipe.x - BIRD_RADIUS;
-            } else {
-              bird.x = pipe.x + PIPE_WIDTH + BIRD_RADIUS;
-            }
-          }
+      const inGap = bird.y - BIRD_RADIUS >= pipe.gapY && bird.y + BIRD_RADIUS <= pipe.gapY + PIPE_GAP;
+      if (inGap) {
+        // Bird is in the gap — clamp Y so it can't escape through top/bottom walls
+        if (bird.y - BIRD_RADIUS < pipe.gapY) {
+          bird.y = pipe.gapY + BIRD_RADIUS;
         }
+        if (bird.y + BIRD_RADIUS > pipe.gapY + PIPE_GAP) {
+          bird.y = pipe.gapY + PIPE_GAP - BIRD_RADIUS;
+        }
+        continue;
+      }
+
+      // Bird is overlapping a pipe wall — figure out where it hit
+      const birdCenterInGapY = bird.y > pipe.gapY && bird.y < pipe.gapY + PIPE_GAP;
+
+      if (birdCenterInGapY) {
+        // Bird center is in the gap zone but edges clip top or bottom wall
+        // Clamp into the gap
+        if (bird.y - BIRD_RADIUS < pipe.gapY) {
+          bird.y = pipe.gapY + BIRD_RADIUS;
+        }
+        if (bird.y + BIRD_RADIUS > pipe.gapY + PIPE_GAP) {
+          bird.y = pipe.gapY + PIPE_GAP - BIRD_RADIUS;
+        }
+      } else {
+        // Bird hit the solid part of the pipe — die and fall in place
+        bird.alive = false;
+        bird.vy = 0;
+        // Clamp X inside the pipe column so it falls within the valley
+        if (bird.x < pipe.x) {
+          bird.x = pipe.x - BIRD_RADIUS;
+        } else if (bird.x > pipe.x + PIPE_WIDTH) {
+          bird.x = pipe.x + PIPE_WIDTH + BIRD_RADIUS;
+        }
+        break;
       }
     }
   }
