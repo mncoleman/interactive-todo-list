@@ -24,8 +24,8 @@ let video = null;
 let cards = [];
 let nextId = 0;
 
-// Hands
-let hands = [];
+// Hands (on window so game.js can access)
+var hands = window.hands = [];
 
 // localStorage
 const STORAGE_KEY = "gesture-todo-items";
@@ -100,7 +100,7 @@ function onResults(results) {
   const detectedHands = results.multiHandLandmarks || [];
 
   const prevHands = hands;
-  hands = detectedHands.map((landmarks, i) => {
+  hands = window.hands = detectedHands.map((landmarks, i) => {
     const prev = prevHands[i] || { grabbing: false, grabbedCard: null, prevGrab: false };
     const grab = isGrabbing(landmarks);
     return { landmarks, grabbing: grab, grabbedCard: prev.grabbedCard, prevGrab: prev.grabbing };

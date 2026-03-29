@@ -8,7 +8,13 @@
 </head>
 <body>
 
-<!-- Main app -->
+<!-- Mode selector -->
+<div id="mode-selector">
+  <button class="mode-btn active" data-mode="todo">TODO</button>
+  <button class="mode-btn" data-mode="game">FLAPPY</button>
+</div>
+
+<!-- Todo app -->
 <div id="app">
   <!-- Zone labels -->
   <div class="zone-label zone-label-supply">NEW</div>
@@ -46,8 +52,15 @@
   </div>
 </div>
 
+<!-- Game -->
+<div id="game" class="hidden">
+  <canvas id="game-canvas"></canvas>
+  <div id="game-score">SCORE: 0</div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.min.js" crossorigin="anonymous"></script>
 <script src="app.js"></script>
+<script src="game.js"></script>
 </body>
 </html>
