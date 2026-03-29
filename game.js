@@ -141,10 +141,12 @@ function gameLoop(timestamp) {
   pipeTimer++;
   if (pipeTimer >= PIPE_INTERVAL) {
     pipeTimer = 0;
-    const gapY = 80 + Math.random() * (H - 160 - PIPE_GAP);
+    const gap = 220 + Math.random() * 780; // 220 to 1000
+    const gapY = 40 + Math.random() * Math.max(0, H - 80 - gap);
     pipes.push({
       x: W + PIPE_WIDTH,
       gapY,
+      gap,
       scored: false,
       colorIdx: pipes.length % PIPE_COLORS.length,
     });
@@ -182,20 +184,20 @@ function gameLoop(timestamp) {
       const overlapX = bird.x + BIRD_RADIUS > pipe.x && bird.x - BIRD_RADIUS < pipe.x + PIPE_WIDTH;
       if (!overlapX) continue;
 
-      const inGap = bird.y - BIRD_RADIUS >= pipe.gapY && bird.y + BIRD_RADIUS <= pipe.gapY + PIPE_GAP;
+      const inGap = bird.y - BIRD_RADIUS >= pipe.gapY && bird.y + BIRD_RADIUS <= pipe.gapY + pipe.gap;
       if (inGap) {
         // Bird is in the gap — clamp Y so it can't escape through top/bottom walls
         if (bird.y - BIRD_RADIUS < pipe.gapY) {
           bird.y = pipe.gapY + BIRD_RADIUS;
         }
-        if (bird.y + BIRD_RADIUS > pipe.gapY + PIPE_GAP) {
-          bird.y = pipe.gapY + PIPE_GAP - BIRD_RADIUS;
+        if (bird.y + BIRD_RADIUS > pipe.gapY + pipe.gap) {
+          bird.y = pipe.gapY + pipe.gap - BIRD_RADIUS;
         }
         continue;
       }
 
       // Bird is overlapping a pipe wall — figure out where it hit
-      const birdCenterInGapY = bird.y > pipe.gapY && bird.y < pipe.gapY + PIPE_GAP;
+      const birdCenterInGapY = bird.y > pipe.gapY && bird.y < pipe.gapY + pipe.gap;
 
       if (birdCenterInGapY) {
         // Bird center is in the gap zone but edges clip top or bottom wall
@@ -203,8 +205,8 @@ function gameLoop(timestamp) {
         if (bird.y - BIRD_RADIUS < pipe.gapY) {
           bird.y = pipe.gapY + BIRD_RADIUS;
         }
-        if (bird.y + BIRD_RADIUS > pipe.gapY + PIPE_GAP) {
-          bird.y = pipe.gapY + PIPE_GAP - BIRD_RADIUS;
+        if (bird.y + BIRD_RADIUS > pipe.gapY + pipe.gap) {
+          bird.y = pipe.gapY + pipe.gap - BIRD_RADIUS;
         }
       } else {
         // Bird hit the solid part of the pipe — die and fall in place
@@ -257,7 +259,7 @@ function gameLoop(timestamp) {
     gameCtx.strokeRect(pipe.x - 4, pipe.gapY - 16, PIPE_WIDTH + 8, 16);
 
     // Bottom pipe
-    const bottomY = pipe.gapY + PIPE_GAP;
+    const bottomY = pipe.gapY + pipe.gap;
     gameCtx.fillStyle = pipeColor;
     gameCtx.fillRect(pipe.x, bottomY, PIPE_WIDTH, H - bottomY);
     gameCtx.strokeRect(pipe.x, bottomY, PIPE_WIDTH, H - bottomY);
