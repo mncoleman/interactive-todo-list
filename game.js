@@ -141,7 +141,7 @@ function gameLoop(timestamp) {
   pipeTimer++;
   if (pipeTimer >= nextPipeIn) {
     pipeTimer = 0;
-    nextPipeIn = 70 + Math.floor(Math.random() * 260); // ~220px to ~1000px apart at 3px/frame
+    nextPipeIn = 70 + Math.floor(Math.random() * 163); // ~210px to ~700px apart at 3px/frame
     const gapY = 80 + Math.random() * (H - 160 - PIPE_GAP);
     pipes.push({
       x: W + PIPE_WIDTH,
