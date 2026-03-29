@@ -18,6 +18,18 @@ const BIRD_COLORS = [
 const PIPE_COLORS = ["#1a3a5c", "#2a1a4c", "#1a4c3a", "#4c2a1a"];
 
 let gameActive = false;
+let trackMode = "hands"; // "hands" or "head"
+
+// Track mode toggle
+document.querySelectorAll(".track-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    trackMode = btn.dataset.track;
+    document.querySelectorAll(".track-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    // Reset birds on mode switch
+    birds = [];
+  });
+});
 let pipes = [];
 let birds = [];        // { y, vy, alive, colorIdx, deadTime }
 let score = 0;
@@ -87,19 +99,30 @@ function gameLoop(timestamp) {
   const W = gameCanvas.width;
   const H = gameCanvas.height;
 
-  // --- Update birds from hand tracking ---
-  // `hands` is the global array from app.js
-  const detectedHands = (typeof hands !== "undefined") ? hands : [];
+  // --- Get tracked positions based on mode ---
+  let trackedPositions = []; // [{x, y}] in normalized coords (0-1, mirrored)
 
-  // Match birds to hands — spawn at hand position
-  while (birds.length < detectedHands.length) {
-    const hand = detectedHands[birds.length];
-    const indices = [0, 5, 9, 13, 17];
-    let sx = 0, sy = 0;
-    for (const idx of indices) { sx += hand.landmarks[idx].x; sy += hand.landmarks[idx].y; }
+  if (trackMode === "hands") {
+    const detectedHands = (typeof hands !== "undefined") ? hands : [];
+    for (const hand of detectedHands) {
+      const indices = [0, 5, 9, 13, 17];
+      let sx = 0, sy = 0;
+      for (const idx of indices) { sx += hand.landmarks[idx].x; sy += hand.landmarks[idx].y; }
+      trackedPositions.push({ x: 1 - sx / indices.length, y: sy / indices.length });
+    }
+  } else {
+    const detectedFaces = (typeof window.faces !== "undefined") ? window.faces : [];
+    for (const face of detectedFaces) {
+      trackedPositions.push({ x: 1 - face.x, y: face.y });
+    }
+  }
+
+  // Match birds to tracked positions — spawn at location
+  while (birds.length < trackedPositions.length) {
+    const pos = trackedPositions[birds.length];
     birds.push({
-      x: (1 - sx / indices.length) * W,
-      y: (sy / indices.length) * H,
+      x: pos.x * W,
+      y: pos.y * H,
       vy: 0,
       alive: true,
       colorIdx: birds.length % BIRD_COLORS.length,
@@ -111,17 +134,9 @@ function gameLoop(timestamp) {
   for (let i = 0; i < birds.length; i++) {
     const bird = birds[i];
 
-    if (i < detectedHands.length && bird.alive) {
-      const hand = detectedHands[i];
-      const indices = [0, 5, 9, 13, 17];
-      let sx = 0, sy = 0;
-      for (const idx of indices) {
-        sx += hand.landmarks[idx].x;
-        sy += hand.landmarks[idx].y;
-      }
-      // Mirror X, map both axes to screen
-      const targetX = (1 - sx / indices.length) * W;
-      const targetY = (sy / indices.length) * H;
+    if (i < trackedPositions.length && bird.alive) {
+      const targetX = trackedPositions[i].x * W;
+      const targetY = trackedPositions[i].y * H;
 
       bird.x += (targetX - bird.x) * 0.25;
       bird.y += (targetY - bird.y) * 0.25;
@@ -335,12 +350,13 @@ function gameLoop(timestamp) {
     gameCtx.restore();
   }
 
-  // "No hands" prompt
-  if (birds.filter(b => b.alive).length === 0 && detectedHands.length === 0) {
+  // "No input" prompt
+  if (birds.filter(b => b.alive).length === 0 && trackedPositions.length === 0) {
     gameCtx.fillStyle = "rgba(200, 220, 232, 0.5)";
     gameCtx.font = "16px -apple-system, sans-serif";
     gameCtx.textAlign = "center";
-    gameCtx.fillText("Show your hand to spawn a bird", W / 2, H / 2);
+    const msg = trackMode === "hands" ? "Show your hand to spawn a bird" : "Show your face to spawn a bird";
+    gameCtx.fillText(msg, W / 2, H / 2);
   }
 
   requestAnimationFrame(gameLoop);

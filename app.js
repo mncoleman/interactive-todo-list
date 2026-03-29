@@ -71,10 +71,21 @@ async function start() {
     });
     mpHands.onResults(onResults);
 
-    // Use Camera utility for frame pumping
+    // Init MediaPipe Face Detection
+    const mpFace = new FaceDetection({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4.1646425229/${file}`
+    });
+    mpFace.setOptions({
+      model: "short",
+      minDetectionConfidence: 0.5,
+    });
+    mpFace.onResults(onFaceResults);
+
+    // Use Camera utility for frame pumping — send to both models
     const camera = new Camera(video, {
       onFrame: async () => {
         await mpHands.send({ image: video });
+        await mpFace.send({ image: video });
       },
       width: 640,
       height: 480,
@@ -165,6 +176,20 @@ function onResults(results) {
   }
 
   drawHands();
+}
+
+// -------------------------------------------------------------------------
+// Face detection results
+// -------------------------------------------------------------------------
+window.faces = [];
+
+function onFaceResults(results) {
+  const detections = results.detections || [];
+  window.faces = detections.map(d => {
+    // Use nose tip (keypoint index 2) for position
+    const nose = d.landmarks[2];
+    return { x: nose.x, y: nose.y };
+  });
 }
 
 // -------------------------------------------------------------------------

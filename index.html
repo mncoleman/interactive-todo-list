@@ -56,9 +56,14 @@
 <div id="game" class="hidden">
   <canvas id="game-canvas"></canvas>
   <div id="game-score">SCORE: 0</div>
+  <div id="track-toggle">
+    <button class="track-btn active" data-track="hands">HANDS</button>
+    <button class="track-btn" data-track="head">HEAD</button>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4.1646425229/face_detection.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.min.js" crossorigin="anonymous"></script>
 <script src="app.js"></script>
 <script src="game.js"></script>
