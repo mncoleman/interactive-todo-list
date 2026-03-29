@@ -28,7 +28,7 @@ let lastGameTime = 0;
 const PIPE_WIDTH   = 60;
 const PIPE_GAP     = 220;
 const PIPE_SPEED   = 3;
-const PIPE_INTERVAL = 90; // frames between pipes
+let nextPipeIn = 90; // frames until next pipe
 const BIRD_X       = 120;
 const BIRD_RADIUS  = 18;
 const GRAVITY      = 0.3;
@@ -139,14 +139,14 @@ function gameLoop(timestamp) {
 
   // --- Pipes ---
   pipeTimer++;
-  if (pipeTimer >= PIPE_INTERVAL) {
+  if (pipeTimer >= nextPipeIn) {
     pipeTimer = 0;
-    const gap = 220 + Math.random() * 780; // 220 to 1000
-    const gapY = 40 + Math.random() * Math.max(0, H - 80 - gap);
+    nextPipeIn = 70 + Math.floor(Math.random() * 260); // ~220px to ~1000px apart at 3px/frame
+    const gapY = 80 + Math.random() * (H - 160 - PIPE_GAP);
     pipes.push({
       x: W + PIPE_WIDTH,
       gapY,
-      gap,
+      gap: PIPE_GAP,
       scored: false,
       colorIdx: pipes.length % PIPE_COLORS.length,
     });
