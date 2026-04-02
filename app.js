@@ -288,17 +288,25 @@ function isGrabbing(landmarks) {
       count++;
     }
   }
-  return (totalDist / count) < 0.09;
+  return (totalDist / count) < 0.13;
 }
+
+// Movement sensitivity: smaller box = less physical movement needed
+// Values are 0-1 normalized range within the camera frame
+const TRACK_BOX = { xMin: 0.25, xMax: 0.75, yMin: 0.2, yMax: 0.8 };
 
 function handCenter(landmarks) {
   const indices = [0, 5, 9, 13, 17];
   let sx = 0, sy = 0;
   for (const i of indices) { sx += landmarks[i].x; sy += landmarks[i].y; }
-  return {
-    x: (1 - sx / indices.length) * canvas.width,
-    y: (sy / indices.length) * canvas.height
-  };
+  const rawX = 1 - sx / indices.length;  // mirrored
+  const rawY = sy / indices.length;
+
+  // Map the track box to full screen, clamping at edges
+  const nx = Math.max(0, Math.min(1, (rawX - TRACK_BOX.xMin) / (TRACK_BOX.xMax - TRACK_BOX.xMin)));
+  const ny = Math.max(0, Math.min(1, (rawY - TRACK_BOX.yMin) / (TRACK_BOX.yMax - TRACK_BOX.yMin)));
+
+  return { x: nx * canvas.width, y: ny * canvas.height };
 }
 
 function cardAt(x, y) {
