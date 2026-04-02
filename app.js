@@ -24,6 +24,11 @@ let video = null;
 let cards = [];
 let nextId = 0;
 
+// Fling physics
+const FLING_MIN_SPEED = 8;   // px/frame minimum to trigger fling
+const FLING_FRICTION = 0.92; // velocity decay per frame
+let flingingCards = [];       // { card, vx, vy }
+
 // Hands (on window so game.js can access)
 var hands = window.hands = [];
 
@@ -183,8 +188,13 @@ function onResults(results) {
 
     if (hand.grabbing && hand.grabbedCard) {
       const card = hand.grabbedCard;
-      card.x = center.x - 90;
-      card.y = center.y - 25;
+      const newX = center.x - 90;
+      const newY = center.y - 25;
+      // Track velocity
+      card.vx = newX - card.x;
+      card.vy = newY - card.y;
+      card.x = newX;
+      card.y = newY;
       positionCard(card);
     }
 
@@ -192,7 +202,15 @@ function onResults(results) {
       const card = hand.grabbedCard;
       card.el.classList.remove("grabbed");
       hand.grabbedCard = null;
-      handleDrop(card, zoneAt(center.x, center.y), center);
+      const speed = Math.hypot(card.vx || 0, card.vy || 0);
+      const dropZone = zoneAt(center.x, center.y);
+      if (speed > FLING_MIN_SPEED && !dropZone) {
+        // Launch fling — card keeps flying until it hits a zone
+        card.el.classList.add("flinging");
+        flingingCards.push({ card, vx: card.vx, vy: card.vy });
+      } else {
+        handleDrop(card, dropZone, center);
+      }
     }
   }
 
@@ -280,6 +298,11 @@ function removeCard(card) {
 // Gesture detection
 // -------------------------------------------------------------------------
 function isGrabbing(landmarks) {
+  // Pinch: thumb tip to index tip
+  const pinchDist = Math.hypot(landmarks[4].x - landmarks[8].x, landmarks[4].y - landmarks[8].y);
+  if (pinchDist < 0.05) return true;
+
+  // Full hand close: average distance between all fingertips
   const tips = TIPS.map(i => landmarks[i]);
   let totalDist = 0, count = 0;
   for (let i = 0; i < tips.length; i++) {
@@ -288,7 +311,7 @@ function isGrabbing(landmarks) {
       count++;
     }
   }
-  return (totalDist / count) < 0.13;
+  return (totalDist / count) < 0.05;
 }
 
 // Movement sensitivity: smaller box = less physical movement needed
@@ -421,6 +444,40 @@ function drawHands() {
     ctx.fill();
   }
 }
+
+// -------------------------------------------------------------------------
+// Fling animation loop
+// -------------------------------------------------------------------------
+function tickFlings() {
+  for (let i = flingingCards.length - 1; i >= 0; i--) {
+    const f = flingingCards[i];
+    f.vx *= FLING_FRICTION;
+    f.vy *= FLING_FRICTION;
+    f.card.x += f.vx;
+    f.card.y += f.vy;
+    positionCard(f.card);
+
+    // Check if card entered a zone
+    const cx = f.card.x + 90;  // card center
+    const cy = f.card.y + 25;
+    const zone = zoneAt(cx, cy);
+
+    const speed = Math.hypot(f.vx, f.vy);
+    if (zone) {
+      // Caught by a zone — drop it
+      f.card.el.classList.remove("flinging");
+      flingingCards.splice(i, 1);
+      handleDrop(f.card, zone, { x: cx, y: cy });
+    } else if (speed < 1 || f.card.x < -200 || f.card.x > window.innerWidth + 200 ||
+               f.card.y < -200 || f.card.y > window.innerHeight + 200) {
+      // Stopped or flew off screen — just stop it
+      f.card.el.classList.remove("flinging");
+      flingingCards.splice(i, 1);
+    }
+  }
+  requestAnimationFrame(tickFlings);
+}
+requestAnimationFrame(tickFlings);
 
 // -------------------------------------------------------------------------
 // Start
