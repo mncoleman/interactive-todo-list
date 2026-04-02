@@ -111,18 +111,39 @@ function onResults(results) {
   const detectedHands = results.multiHandLandmarks || [];
 
   const prevHands = hands;
-  hands = window.hands = detectedHands.map((landmarks, i) => {
-    const prev = prevHands[i] || { grabbing: false, grabbedCard: null, prevGrab: false };
+
+  // Match detected hands to previous hands by spatial proximity (not array index)
+  // to prevent cards jumping when MediaPipe reorders hands between frames
+  const newHands = detectedHands.map(landmarks => {
     const grab = isGrabbing(landmarks);
-    return { landmarks, grabbing: grab, grabbedCard: prev.grabbedCard, prevGrab: prev.grabbing };
+    const center = handCenter(landmarks);
+    return { landmarks, grabbing: grab, grabbedCard: null, prevGrab: false, cx: center.x, cy: center.y };
   });
 
-  // Clear grabs for disappeared hands
-  for (let i = hands.length; i < prevHands.length; i++) {
-    if (prevHands[i] && prevHands[i].grabbedCard) {
+  const usedPrev = new Set();
+  for (const nh of newHands) {
+    let bestIdx = -1, bestDist = Infinity;
+    for (let j = 0; j < prevHands.length; j++) {
+      if (usedPrev.has(j)) continue;
+      const pc = handCenter(prevHands[j].landmarks);
+      const d = Math.hypot(nh.cx - pc.x, nh.cy - pc.y);
+      if (d < bestDist) { bestDist = d; bestIdx = j; }
+    }
+    if (bestIdx >= 0 && bestDist < 200) {
+      usedPrev.add(bestIdx);
+      nh.grabbedCard = prevHands[bestIdx].grabbedCard;
+      nh.prevGrab = prevHands[bestIdx].grabbing;
+    }
+  }
+
+  // Clear grabs for unmatched previous hands
+  for (let i = 0; i < prevHands.length; i++) {
+    if (!usedPrev.has(i) && prevHands[i].grabbedCard) {
       prevHands[i].grabbedCard.el.classList.remove("grabbed");
     }
   }
+
+  hands = window.hands = newHands;
 
   hudHands.textContent = `HANDS: ${hands.length}`;
 
